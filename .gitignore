@@ -1,0 +1,17 @@
+# Node/JS/TS
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+**/.env
+
+# .NET
+**/bin/
+**/obj/
+**/appsettings.Development.json
+
+# Vite
+**/.vite/
+
+# Logs
+*.log
