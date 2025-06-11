@@ -1,0 +1,48 @@
+/* _button.scss */
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.button {
+    display: inline-block;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    font-size: $font-md;
+    font-weight: 500;
+    background-color: $color-primary;
+    color: $color-white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+        background-color: darken($color-primary, 10%);
+    }
+
+    &--secondary {
+        background-color: $color-secondary;
+
+        &:hover {
+            background-color: darken($color-secondary, 10%);
+        }
+    }
+
+    &--outline {
+        background-color: transparent;
+        border: 2px solid $color-primary;
+        color: $color-primary;
+
+        &:hover {
+            background-color: $color-primary;
+            color: $color-white;
+        }
+    }
+
+    &--full {
+        width: 100%;
+        text-align: center;
+    }
+
+    &--disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
