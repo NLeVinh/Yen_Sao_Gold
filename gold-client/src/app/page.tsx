@@ -46,8 +46,8 @@ export default function Home() {
             </Box>
 
             <Box>
-                <Typography variant="h1" component="h1">
-                    Counter: {value}
+                <Typography variant="h6" component="h6">
+                    Counter: {value} 
                 </Typography>
                 <Button onClick={() => dispatch(increment())}>+</Button>
                 <Button onClick={() => dispatch(decrement())}>-</Button>
