@@ -1,0 +1,49 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+.main-drawer {
+    &__list {
+        &-header {
+            padding: 10px;
+            font-family: Roboto, sans-serif !important;
+            color: #121926;
+            text-transform: capitalize;
+        }
+
+        &-child {
+            padding: 2px 20px;
+            color: $text-color;
+        }
+
+        &-item {
+            @include flex-center;
+
+            &:hover {
+                background-color: $primary-color-light !important;
+                color: $primary-color-main;
+                .main-drawer__list-icon {
+                    color: $primary-color-main;
+                }
+            }
+        }
+        &-item.active {
+            border-radius: 5px;
+            background-color: $primary-color-light !important;
+            color: $primary-color-main;
+            .main-drawer__list-icon {
+                color: $primary-color-main;
+            }
+        }
+
+        &-icon {
+            min-width: 40px !important;
+            // width: max-content;
+            color: $text-color;
+        }
+
+        &-text {
+            font-weight: 400 !important;
+        }
+    }
+}
