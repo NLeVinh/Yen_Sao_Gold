@@ -1,0 +1,13 @@
+{
+    "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "server": "localhost",
+        "database": "DB_YENSAOGOLD",
+        "port": "1433",
+        "dbuser": "sa",
+        "password": "Caovupro/6262115",
+        "JwtSettings__Secret": "ThisIsASecretKeyForJWTGeneration123!@#",
+        "JwtSettings__Issuer": "YenSaoGoldIssuer",
+        "JwtSettings__Audience": "YenSaoGoldClient"
+    }
+}
