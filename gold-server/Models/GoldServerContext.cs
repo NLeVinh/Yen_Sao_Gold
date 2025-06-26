@@ -57,19 +57,12 @@ public partial class GoldServerContext : DbContext
 
             entity.Property(e => e.ID_Banner)
                 .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasComputedColumnSql("(CONVERT([varchar](20),'B'+CONVERT([varchar],[IndexAutoBanner])))", true);
+                .IsUnicode(false);
             entity.Property(e => e.CreateBy)
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.CreateDate).HasColumnType("datetime");
-            entity.Property(e => e.IndexAutoBanner).ValueGeneratedOnAdd();
             entity.Property(e => e.Name).HasMaxLength(255);
-
-            entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.BANNERs)
-                .HasForeignKey(d => d.CreateBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Banners_CreateBy");
         });
 
         modelBuilder.Entity<CART>(entity =>
@@ -81,11 +74,6 @@ public partial class GoldServerContext : DbContext
             entity.Property(e => e.ID_User)
                 .HasMaxLength(20)
                 .IsUnicode(false);
-
-            entity.HasOne(d => d.ID_UserNavigation).WithMany(p => p.CARTs)
-                .HasForeignKey(d => d.ID_User)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Carts_ID_User");
         });
 
         modelBuilder.Entity<CART_DETAIL>(entity =>
@@ -118,26 +106,18 @@ public partial class GoldServerContext : DbContext
 
             entity.Property(e => e.ID_Category)
                 .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasComputedColumnSql("(CONVERT([varchar](20),'C'+CONVERT([varchar],[IndexAutoCategory])))", true);
+                .IsUnicode(false);
+            // .HasComputedColumnSql("(CONVERT([varchar](20),'C'+CONVERT([varchar],[IndexAutoCategory])))", true);
             entity.Property(e => e.CreateBy)
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.CreateDate).HasColumnType("datetime");
-            entity.Property(e => e.IndexAutoCategory).ValueGeneratedOnAdd();
+            // entity.Property(e => e.IndexAutoCategory).ValueGeneratedOnAdd();
             entity.Property(e => e.Name).HasMaxLength(255);
             entity.Property(e => e.UpdateBy)
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.UpdateDate).HasColumnType("datetime");
-
-            entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.CATEGORyCreateByNavigations)
-                .HasForeignKey(d => d.CreateBy)
-                .HasConstraintName("FK_CATEGORIES_CreateBy");
-
-            entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.CATEGORyUpdateByNavigations)
-                .HasForeignKey(d => d.UpdateBy)
-                .HasConstraintName("FK_CATEGORIES_UpdateBy");
         });
 
         modelBuilder.Entity<IMAGE>(entity =>
@@ -171,9 +151,6 @@ public partial class GoldServerContext : DbContext
                 .HasForeignKey(d => d.ID_Status)
                 .HasConstraintName("FK_INVOICES_ID_Status");
 
-            entity.HasOne(d => d.ID_UserNavigation).WithMany(p => p.INVOICEs)
-                .HasForeignKey(d => d.ID_User)
-                .HasConstraintName("FK_INVOICES_ID_User");
         });
 
         modelBuilder.Entity<INVOICE_DETAIL>(entity =>
@@ -225,8 +202,8 @@ public partial class GoldServerContext : DbContext
 
             entity.Property(e => e.ID_Product)
                 .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasComputedColumnSql("(CONVERT([varchar](20),'P'+CONVERT([varchar],[IndexAutoProduct])))", true);
+                .IsUnicode(false);
+            // .HasComputedColumnSql("(CONVERT([varchar](20),'P'+CONVERT([varchar],[IndexAutoProduct])))", true);
             entity.Property(e => e.CreateBy)
                 .HasMaxLength(20)
                 .IsUnicode(false);
@@ -234,18 +211,13 @@ public partial class GoldServerContext : DbContext
             entity.Property(e => e.ID_Category)
                 .HasMaxLength(20)
                 .IsUnicode(false);
-            entity.Property(e => e.IndexAutoProduct).ValueGeneratedOnAdd();
+            // entity.Property(e => e.IndexAutoProduct).ValueGeneratedOnAdd();
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Price).HasColumnType("decimal(19, 0)");
             entity.Property(e => e.UpdateBy)
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.UpdateDate).HasColumnType("datetime");
-
-            entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.PRODUCTCreateByNavigations)
-                .HasForeignKey(d => d.CreateBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Products_CreateBy");
 
             entity.HasOne(d => d.ID_CategoryNavigation).WithMany(p => p.PRODUCTs)
                 .HasForeignKey(d => d.ID_Category)
@@ -255,10 +227,6 @@ public partial class GoldServerContext : DbContext
                 .HasForeignKey(d => d.ID_Status)
                 .HasConstraintName("FK_Products_Status");
 
-            entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.PRODUCTUpdateByNavigations)
-                .HasForeignKey(d => d.UpdateBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Products_UpdateBy");
         });
 
         modelBuilder.Entity<REF_IMAGE>(entity =>
@@ -316,7 +284,7 @@ public partial class GoldServerContext : DbContext
 
         modelBuilder.Entity<USER>(entity =>
         {
-            entity.HasKey(e => e.ID_User).HasName("PK__USERS__ED4DE4421CEA3A59");
+            entity.HasKey(e => e.IndexAutoUser).HasName("PK__USERS__IndexAutoUser");
 
             entity.ToTable("USERS");
 
@@ -327,7 +295,7 @@ public partial class GoldServerContext : DbContext
             entity.Property(e => e.ID_User)
                 .HasMaxLength(20)
                 .IsUnicode(false)
-                .HasComputedColumnSql("(CONVERT([varchar](20),'U'+CONVERT([varchar],[IndexAutoUser])))", true);
+            .HasComputedColumnSql("(CONVERT([varchar](20),'U'+CONVERT([varchar],[IndexAutoUser])))", true);
             entity.Property(e => e.CreateDate).HasColumnType("datetime");
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.FullName).HasMaxLength(100);

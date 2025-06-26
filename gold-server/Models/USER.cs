@@ -23,19 +23,5 @@ public partial class USER
 
     public DateTime? UpdateDate { get; set; }
 
-    public virtual ICollection<BANNER> BANNERs { get; set; } = new List<BANNER>();
-
-    public virtual ICollection<CART> CARTs { get; set; } = new List<CART>();
-
-    public virtual ICollection<CATEGORy> CATEGORyCreateByNavigations { get; set; } = new List<CATEGORy>();
-
-    public virtual ICollection<CATEGORy> CATEGORyUpdateByNavigations { get; set; } = new List<CATEGORy>();
-
     public virtual ROLE ID_RoleNavigation { get; set; } = null!;
-
-    public virtual ICollection<INVOICE> INVOICEs { get; set; } = new List<INVOICE>();
-
-    public virtual ICollection<PRODUCT> PRODUCTCreateByNavigations { get; set; } = new List<PRODUCT>();
-
-    public virtual ICollection<PRODUCT> PRODUCTUpdateByNavigations { get; set; } = new List<PRODUCT>();
 }

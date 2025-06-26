@@ -1,6 +1,8 @@
 using gold_server.Configs;
-using gold_server.Data;
+using gold_server.Models;
+using gold_server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -34,8 +36,8 @@ builder.Services.AddDbContext<GoldServerContext>(options =>
     options.UseSqlServer(connectionString));
 
 // JWT setup
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 var key = Encoding.UTF8.GetBytes(jwtSettings.Secret);
 
 builder.Services.AddAuthentication(options =>
@@ -53,6 +55,9 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = true,
         ValidateAudience = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        ClockSkew = TimeSpan.Zero,
         RoleClaimType = ClaimTypes.Role
     };
 });
@@ -95,13 +100,21 @@ builder.Services.AddSwaggerGen(c =>
 // Optional: AutoMapper, DI, etc.
 // builder.Services.AddAutoMapper(typeof(YourProfile));
 // builder.Services.AddScoped<IYourService, YourService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
 app.UseCors("AllowSpecificOrigin");
-app.UseSwagger();
-app.UseSwaggerUI();
-app.UseDeveloperExceptionPage();
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseExceptionHandler("/error");
+}
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
