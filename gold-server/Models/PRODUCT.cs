@@ -1,45 +1,62 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace gold_server.Models;
 
+[Table("PRODUCTS")]
 public partial class PRODUCT
 {
-    public int IndexAutoProduct { get; set; }
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int ID_Product { get; set; }
 
-    public string ID_Product { get; set; } = null!;
-
+    [Required]
+    [MaxLength(100)]
     public string Name { get; set; } = null!;
 
     public string? Description { get; set; }
 
+    [Required]
     public decimal Price { get; set; }
 
-    public string? ID_Category { get; set; }
+    public int? ID_Category { get; set; }
 
-    public string UpdateBy { get; set; } = null!;
+    public int? UpdateBy { get; set; }
 
-    public string CreateBy { get; set; } = null!;
+    [Required]
+    public int CreateBy { get; set; }
 
+    [Required]
     public DateTime CreateDate { get; set; }
 
     public DateTime? UpdateDate { get; set; }
 
-    public int? InStock { get; set; }
+    [Required]
+    public int InStock { get; set; } = 0;
 
-    public int? ID_Status { get; set; }
+    [Required]
+    public int ID_Status { get; set; }
 
-    public int? SoldQuantity { get; set; }
+    [Required]
+    public int SoldQuantity { get; set; } = 0;
+
+    [ForeignKey(nameof(CreateBy))]
+    public virtual USER CreateByNavigation { get; set; } = null!;
+
+    [ForeignKey(nameof(ID_Category))]
+    public virtual CATEGORY? CategoryNavigation { get; set; }
+
+    [ForeignKey(nameof(ID_Status))]
+    public virtual STATUS? StatusNavigation { get; set; }
+
+    [ForeignKey(nameof(UpdateBy))]
+    public virtual USER UpdateByNavigation { get; set; } = null!;
+    
+    public virtual ICollection<PRODUCT_IMAGE> PRODUCT_IMAGEs { get; set; } = new List<PRODUCT_IMAGE>();
 
     public virtual ICollection<CART_DETAIL> CART_DETAILs { get; set; } = new List<CART_DETAIL>();
 
-    public virtual USER CreateByNavigation { get; set; } = null!;
-
-    public virtual CATEGORy? ID_CategoryNavigation { get; set; }
-
-    public virtual STATUS? ID_StatusNavigation { get; set; }
-
     public virtual ICollection<INVOICE_DETAIL> INVOICE_DETAILs { get; set; } = new List<INVOICE_DETAIL>();
-
-    public virtual USER UpdateByNavigation { get; set; } = null!;
 }

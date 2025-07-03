@@ -35,11 +35,11 @@ namespace gold_server.Services
                 return null;
 
             var role = await _context.ROLEs
-                .Where(r => r.ID_Roles == user.ID_Role)
+                .Where(r => r.ID_Role == user.ID_Role)
                 .Select(r => new
                 {
                     r.Name,
-                    Permissions = r.ID_Permissions.Select(p => p.Name).ToList()
+                    Permissions = r.PERMISSIONs.Select(p => p.Name).ToList()
                 }).FirstOrDefaultAsync();
 
             if (role == null) return null;
@@ -49,27 +49,39 @@ namespace gold_server.Services
 
         public async Task<bool> RegisterAsync(RegisterRequestDto request)
         {
-            if (await _context.USERs.AnyAsync(u => u.Email == request.Email))
-                return false;
-
-            var role = await _context.ROLEs.FirstOrDefaultAsync(r => r.Name == "Customer");
-            if (role == null)
-                return false;
-
-            var user = new USER
+            try
             {
-                // ID_User = Guid.NewGuid().ToString(),
-                Email = request.Email,
-                FullName = request.FullName,
-                Phone = request.Phone,
-                Password_Hash = HashPassword(request.Password),
-                ID_Role = role.ID_Roles,
-                CreateDate = DateTime.UtcNow
-            };
+                if (await _context.USERs.AnyAsync(u => u.Email == request.Email))
+                    return false;
 
-            _context.USERs.Add(user);
-            await _context.SaveChangesAsync();
-            return true;
+                var role = await _context.ROLEs.FirstOrDefaultAsync(r => r.Name == "Khách hàng");
+                if (role == null)
+                    return false;
+
+                var user = new USER
+                {
+                    Email = request.Email,
+                    FullName = request.FullName,
+                    Phone = request.Phone,
+                    Password_Hash = HashPassword(request.Password),
+                    ID_Role = role.ID_Role,
+                    CreateDate = DateTime.UtcNow
+                };
+
+                _context.USERs.Add(user);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException dbEx)
+            {
+                Console.WriteLine($"DB update error: {dbEx.InnerException?.Message ?? dbEx.Message}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<LoginResponseDto?> RefreshTokenAsync(string refreshToken)
@@ -92,9 +104,9 @@ namespace gold_server.Services
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userId =  int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-                if (userId == null)
+                if (userId == 0)
                     return null;
 
                 var user = await _context.USERs.FirstOrDefaultAsync(u => u.ID_User == userId);
@@ -102,11 +114,11 @@ namespace gold_server.Services
                     return null;
 
                 var role = await _context.ROLEs
-                    .Where(r => r.ID_Roles == user.ID_Role)
+                    .Where(r => r.ID_Role == user.ID_Role)
                     .Select(r => new
                     {
                         r.Name,
-                        Permissions = r.ID_Permissions.Select(p => p.Name).ToList()
+                        Permissions = r.PERMISSIONs.Select(p => p.Name).ToList()
                     }).FirstOrDefaultAsync();
 
                 if (role == null)
@@ -134,7 +146,7 @@ namespace gold_server.Services
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.ID_User),
+                new Claim(ClaimTypes.NameIdentifier, user.ID_User.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim("Role", roleName)
             };
@@ -156,7 +168,7 @@ namespace gold_server.Services
             // Refresh token (JWT) with longer expiry and fewer claims
             var refreshClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.ID_User),
+                new Claim(ClaimTypes.NameIdentifier, user.ID_User.ToString()),
                 new Claim("TokenType", "RefreshToken")
             };
             var refreshTokenExpires = DateTime.UtcNow.AddDays(7);
@@ -181,8 +193,8 @@ namespace gold_server.Services
         public async Task<bool> AssignPermissionsToRoleAsync(AssignPermissionRequestDto request)
         {
             var role = await _context.ROLEs
-                .Include(r => r.ID_Permissions)
-                .FirstOrDefaultAsync(r => r.ID_Roles == request.RoleId);
+                .Include(r => r.PERMISSIONs)
+                .FirstOrDefaultAsync(r => r.ID_Role == request.RoleId);
 
             if (role == null)
                 return false;
@@ -192,7 +204,7 @@ namespace gold_server.Services
                 .ToListAsync();
 
             // Gán danh sách permission mới
-            role.ID_Permissions = permissions;
+            role.PERMISSIONs = permissions;
 
             await _context.SaveChangesAsync();
             return true;
@@ -220,14 +232,14 @@ namespace gold_server.Services
         public async Task<List<UserResponseDto>> GetAllUsersAsync()
         {
             return await _context.USERs
-                .Include(u => u.ID_RoleNavigation)
+                .Include(u => u.RoleNavigation)
                 .Select(u => new UserResponseDto
                 {
                     ID_User = u.ID_User,
                     FullName = u.FullName,
                     Email = u.Email,
                     Phone = u.Phone,
-                    RoleName = u.ID_RoleNavigation.Name,
+                    RoleName = u.RoleNavigation.Name,
                     CreateDate = u.CreateDate
                 })
                 .ToListAsync();
