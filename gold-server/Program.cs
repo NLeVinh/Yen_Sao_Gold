@@ -101,6 +101,7 @@ builder.Services.AddSwaggerGen(c =>
 // builder.Services.AddAutoMapper(typeof(YourProfile));
 // builder.Services.AddScoped<IYourService, YourService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProvinceWardImportService, ProvinceWardImportService>();
 
 var app = builder.Build();
 

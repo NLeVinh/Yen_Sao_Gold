@@ -44,21 +44,59 @@ public partial class GoldServerContext : DbContext
     public virtual DbSet<STATUS> STATUSs { get; set; }
 
     public virtual DbSet<USER> USERs { get; set; }
+    public virtual DbSet<PROVINCE> PROVINCEs { get; set; }
+    public virtual DbSet<WARD> WARDs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-                if (!optionsBuilder.IsConfigured)
+        if (!optionsBuilder.IsConfigured)
         {
             optionsBuilder
                 .UseSqlServer("Server=localhost,1433;Database=DB_YENSAOGOLD;User Id=sa;Password=hniVeL@0355;TrustServerCertificate=True;")
                 .LogTo(Console.WriteLine, LogLevel.Information); // 👈 Ghi log ra console
         }
     }
-// #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//     => optionsBuilder.UseSqlServer("");
+    // #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+    //     => optionsBuilder.UseSqlServer("");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<PROVINCE>(entity =>
+        {
+            entity.ToTable("PROVINCES");
+
+            entity.HasKey(e => e.ID_Province).HasName("PK_PROVINCES_TBL");
+
+            entity.Property(e => e.ID_Province).ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.CreateDate).IsRequired().HasColumnType("datetime");
+            entity.Property(e => e.UpdateDate).HasColumnType("datetime");
+            entity.Property(e => e.ID_Status);
+        });
+
+        modelBuilder.Entity<WARD>(entity =>
+        {
+            entity.ToTable("WARDS");
+
+            entity.HasKey(e => e.ID_Ward).HasName("PK_WARDS_TBL");
+
+            entity.Property(e => e.ID_Ward).ValueGeneratedOnAdd();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.CreateDate).IsRequired().HasColumnType("datetime");
+            entity.Property(e => e.UpdateDate).HasColumnType("datetime");
+            entity.Property(e => e.ID_Status);
+            entity.Property(e => e.ID_Province).IsRequired();
+
+            entity.HasOne(d => d.ProvinceNavigation)
+                .WithMany(p => p.WARDs)
+                .HasForeignKey(d => d.ID_Province)
+                .HasPrincipalKey(p => p.ID_Province)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_WARDS_ID_Province");
+        });
+
         modelBuilder.Entity<BANNER>(entity =>
         {
             entity.ToTable("BANNERS");
@@ -99,7 +137,7 @@ public partial class GoldServerContext : DbContext
 
             entity.Property(e => e.ID_Product)
                 .IsRequired();
-            
+
             entity.Property(e => e.Count)
                 .IsRequired();
 
@@ -144,7 +182,7 @@ public partial class GoldServerContext : DbContext
 
             entity.Property(e => e.CreateBy)
                 .IsRequired();
-            
+
             entity.HasOne(c => c.CreateByNavigation).WithMany(u => u.CREATED_CATEGORIEs)
                 .HasForeignKey(c => c.CreateBy)
                 .HasPrincipalKey(u => u.ID_User)
@@ -466,7 +504,7 @@ public partial class GoldServerContext : DbContext
             entity.HasIndex(e => e.Phone, "UQ_PHONE_USER").IsUnique();
 
             entity.Property(e => e.ID_User).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
 
             entity.Property(e => e.FullName).IsRequired().HasMaxLength(100).IsUnicode(true);
