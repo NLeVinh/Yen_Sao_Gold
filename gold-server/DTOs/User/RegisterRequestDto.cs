@@ -11,8 +11,14 @@ namespace gold_server.DTOs.User
         [Required]
         [MaxLength(255)]
         public string Email { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(255)]
         public string Password { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(15)]
         public string Phone { get; set; } = string.Empty;
     }
 }

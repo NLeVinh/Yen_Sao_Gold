@@ -1,4 +1,5 @@
 using gold_server.DTOs;
+using gold_server.DTOs.common;
 using gold_server.DTOs.User;
 using gold_server.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -23,8 +24,8 @@ namespace gold_server.Controllers
             {
                 var result = await _authService.LoginAsync(request);
                 if (result == null)
-                    return Unauthorized("Invalid credentials");
-                return Ok(result);
+                    return Unauthorized(new ApiResponseDto<string>("Invalid credentials"));
+                return Ok(new ApiResponseDto<LoginResponseDto>(result, "Login successful."));
             }
             catch (Exception ex)
             {
@@ -43,8 +44,8 @@ namespace gold_server.Controllers
             {
                 var success = await _authService.RegisterAsync(request);
                 if (!success)
-                    return BadRequest("Email already exists or registration failed.");
-                return Ok("Registration successful.");
+                    return BadRequest(new ApiResponseDto<string>("Email already exists or registration failed."));
+                return Ok(new ApiResponseDto<string>("Registration successful."));
             }
             catch (Exception ex)
             {
@@ -58,8 +59,8 @@ namespace gold_server.Controllers
             {
                 var result = await _authService.AssignPermissionsToRoleAsync(request);
                 if (!result)
-                    return NotFound("Role not found or failed to assign permissions.");
-                return Ok("Permissions assigned successfully.");
+                    return NotFound(new ApiResponseDto<string>("Role not found or failed to assign permissions."));
+                return Ok(new ApiResponseDto<string>("Permissions assigned successfully."));
             }
             catch (Exception ex)
             {
@@ -74,9 +75,9 @@ namespace gold_server.Controllers
             {
                 var success = await _authService.CreateRoleAsync(request);
                 if (!success)
-                    return BadRequest("Role already exists or invalid input.");
+                    return BadRequest(new ApiResponseDto<string>("Role already exists or invalid input."));
 
-                return Ok("Role created successfully.");
+                return Ok(new ApiResponseDto<string>("Role created successfully."));
             }
             catch (Exception ex)
             {
@@ -90,7 +91,7 @@ namespace gold_server.Controllers
             try
             {
                 var users = await _authService.GetAllUsersAsync();
-                return Ok(users);
+                return Ok(new ApiResponseDto<IEnumerable<UserResponseDto>>(users, "Users retrieved successfully."));
             }
             catch (Exception ex)
             {
@@ -105,8 +106,8 @@ namespace gold_server.Controllers
             {
                 var result = await _authService.RefreshTokenAsync(refreshToken);
                 if (result == null)
-                    return Unauthorized("Invalid or expired refresh token.");
-                return Ok(result);
+                    return Unauthorized(new ApiResponseDto<string>("Invalid or expired refresh token."));
+                return Ok(new ApiResponseDto<LoginResponseDto>(result, "Token refreshed successfully."));
             }
             catch (Exception ex)
             {

@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using gold_server.Configs;
+using gold_server.Constants;
 using gold_server.DTOs;
 using gold_server.DTOs.User;
 using gold_server.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -30,21 +25,29 @@ namespace gold_server.Services
 
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
         {
-            var user = await _context.USERs.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null || !VerifyPassword(request.Password, user.Password_Hash))
+            try
+            {
+                var user = await _context.USERs.FirstOrDefaultAsync(u => u.Email == request.Email);
+                if (user == null || !VerifyPassword(request.Password, user.Password_Hash))
+                    return null;
+
+                var role = await _context.ROLEs
+                    .Where(r => r.ID_Role == user.ID_Role)
+                    .Select(r => new
+                    {
+                        r.Name,
+                        Permissions = r.PERMISSIONs.Select(p => p.Name).ToList()
+                    }).FirstOrDefaultAsync();
+
+                if (role == null) return null;
+
+                return GenerateJwtToken(user, role.Name, role.Permissions);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in LoginAsync: {ex.Message}");
                 return null;
-
-            var role = await _context.ROLEs
-                .Where(r => r.ID_Role == user.ID_Role)
-                .Select(r => new
-                {
-                    r.Name,
-                    Permissions = r.PERMISSIONs.Select(p => p.Name).ToList()
-                }).FirstOrDefaultAsync();
-
-            if (role == null) return null;
-
-            return GenerateJwtToken(user, role.Name, role.Permissions);
+            }
         }
 
         public async Task<bool> RegisterAsync(RegisterRequestDto request)
@@ -54,9 +57,11 @@ namespace gold_server.Services
                 if (await _context.USERs.AnyAsync(u => u.Email == request.Email))
                     return false;
 
-                var role = await _context.ROLEs.FirstOrDefaultAsync(r => r.Name == "Khách hàng");
+                var role = await _context.ROLEs.FirstOrDefaultAsync(r => r.ID_Role == AuthConstants.CustomerRoleId);
                 if (role == null)
                     return false;
+                var vietnamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+                var vietnamNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vietnamTimeZone);
 
                 var user = new USER
                 {
@@ -65,7 +70,7 @@ namespace gold_server.Services
                     Phone = request.Phone,
                     Password_Hash = HashPassword(request.Password),
                     ID_Role = role.ID_Role,
-                    CreateDate = DateTime.UtcNow
+                    CreateDate = vietnamNow
                 };
 
                 _context.USERs.Add(user);
@@ -79,18 +84,18 @@ namespace gold_server.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
+                Console.WriteLine($"Error in RegisterAsync: {ex.Message}");
                 return false;
             }
         }
 
         public async Task<LoginResponseDto?> RefreshTokenAsync(string refreshToken)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
-
             try
             {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
+
                 var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
@@ -100,11 +105,11 @@ namespace gold_server.Services
                     ValidIssuer = _jwtSettings.Issuer,
                     ValidAudience = _jwtSettings.Audience,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero // no extra leeway
+                    ClockSkew = TimeSpan.Zero
                 }, out SecurityToken validatedToken);
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
-                var userId =  int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
                 if (userId == 0)
                     return null;
@@ -126,8 +131,9 @@ namespace gold_server.Services
 
                 return GenerateJwtToken(user, role.Name, role.Permissions);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error in RefreshTokenAsync: {ex.Message}");
                 return null;
             }
         }
@@ -148,15 +154,18 @@ namespace gold_server.Services
             {
                 new Claim(ClaimTypes.NameIdentifier, user.ID_User.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim("Role", roleName)
+                new Claim(AuthConstants.RoleClaim, roleName)
             };
 
             foreach (var perm in permissions)
-                claims.Add(new Claim("Permission", perm));
+                claims.Add(new Claim(AuthConstants.PermissionClaim, perm));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var accessTokenExpires = DateTime.UtcNow.AddMinutes(5);
+            var accessTokenExpires = TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.UtcNow.AddMinutes(AuthConstants.AccessTokenMinutes),
+                TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
+            );
             var accessToken = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
@@ -165,13 +174,15 @@ namespace gold_server.Services
                 signingCredentials: creds
             );
 
-            // Refresh token (JWT) with longer expiry and fewer claims
             var refreshClaims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.ID_User.ToString()),
-                new Claim("TokenType", "RefreshToken")
+                new Claim(AuthConstants.TokenTypeClaim, AuthConstants.RefreshTokenType)
             };
-            var refreshTokenExpires = DateTime.UtcNow.AddDays(7);
+            var refreshTokenExpires = TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.UtcNow.AddDays(AuthConstants.RefreshTokenDays),
+                TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
+            );
             var refreshToken = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
@@ -192,57 +203,80 @@ namespace gold_server.Services
 
         public async Task<bool> AssignPermissionsToRoleAsync(AssignPermissionRequestDto request)
         {
-            var role = await _context.ROLEs
-                .Include(r => r.PERMISSIONs)
-                .FirstOrDefaultAsync(r => r.ID_Role == request.RoleId);
+            try
+            {
+                var role = await _context.ROLEs
+                    .Include(r => r.PERMISSIONs)
+                    .FirstOrDefaultAsync(r => r.ID_Role == request.RoleId);
 
-            if (role == null)
+                if (role == null)
+                    return false;
+
+                var permissions = await _context.PERMISSIONs
+                    .Where(p => request.PermissionIds.Contains(p.ID_Permission))
+                    .ToListAsync();
+
+                role.PERMISSIONs = permissions;
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in AssignPermissionsToRoleAsync: {ex.Message}");
                 return false;
-
-            var permissions = await _context.PERMISSIONs
-                .Where(p => request.PermissionIds.Contains(p.ID_Permission))
-                .ToListAsync();
-
-            // Gán danh sách permission mới
-            role.PERMISSIONs = permissions;
-
-            await _context.SaveChangesAsync();
-            return true;
+            }
         }
         public async Task<bool> CreateRoleAsync(CreateRoleRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.Name))
-                return false;
-
-            var exists = await _context.ROLEs.AnyAsync(r => r.Name == request.Name);
-            if (exists)
-                return false;
-
-            var newRole = new ROLE
+            try
             {
-                Name = request.Name,
-                Description = request.Description
-            };
+                if (string.IsNullOrWhiteSpace(request.Name))
+                    return false;
 
-            _context.ROLEs.Add(newRole);
-            await _context.SaveChangesAsync();
-            return true;
+                var exists = await _context.ROLEs.AnyAsync(r => r.Name == request.Name);
+                if (exists)
+                    return false;
+
+                var newRole = new ROLE
+                {
+                    Name = request.Name,
+                    Description = request.Description
+                };
+
+                _context.ROLEs.Add(newRole);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CreateRoleAsync: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<List<UserResponseDto>> GetAllUsersAsync()
         {
-            return await _context.USERs
-                .Include(u => u.RoleNavigation)
-                .Select(u => new UserResponseDto
-                {
-                    ID_User = u.ID_User,
-                    FullName = u.FullName,
-                    Email = u.Email,
-                    Phone = u.Phone,
-                    RoleName = u.RoleNavigation.Name,
-                    CreateDate = u.CreateDate
-                })
-                .ToListAsync();
+            try
+            {
+                return await _context.USERs
+                    .Include(u => u.RoleNavigation)
+                    .Select(u => new UserResponseDto
+                    {
+                        ID_User = u.ID_User,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        Phone = u.Phone,
+                        RoleName = u.RoleNavigation.Name,
+                        CreateDate = u.CreateDate
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllUsersAsync: {ex.Message}");
+                return new List<UserResponseDto>();
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -7,7 +8,10 @@ namespace gold_server.DTOs.User
 {
     public class CreateRoleRequestDto
     {
+        [Required]
+        [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
+        [MaxLength(255)]
         public string? Description { get; set; }
     }
 }
