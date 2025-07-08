@@ -1,4 +1,5 @@
 using gold_server.Configs;
+using gold_server.Exceptions;
 using gold_server.Models;
 using gold_server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,7 +32,10 @@ var user = builder.Configuration["dbuser"];
 var connectionString = $"Server={server},{port};Database={database};User Id={user};Password={pass};TrustServerCertificate=True;";
 
 // Services
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ApiExceptionFilter>();
+});
 builder.Services.AddDbContext<GoldServerContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -102,6 +106,7 @@ builder.Services.AddSwaggerGen(c =>
 // builder.Services.AddScoped<IYourService, YourService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvinceWardImportService, ProvinceWardImportService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
 
