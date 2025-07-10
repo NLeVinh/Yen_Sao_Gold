@@ -19,7 +19,7 @@ namespace gold_server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string search, [FromQuery] int? categoryId, [FromQuery] int? statusId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] int? categoryId, [FromQuery] int? statusId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var result = await _service.GetAllAsync(search, categoryId, statusId, page, pageSize);
             return Ok(new ApiResponseDto<PagedResultDto<ProductDto>>(result));
@@ -33,7 +33,8 @@ namespace gold_server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
+        [RequestSizeLimit(50_000_000)]
+        public async Task<IActionResult> Create([FromForm] CreateProductDto dto)
         {
             int userId = 1; // replace with real user from token
             var product = await _service.CreateAsync(dto, userId);
@@ -41,11 +42,12 @@ namespace gold_server.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto dto)
+        [RequestSizeLimit(50_000_000)]
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateProductDto dto)
         {
             int userId = 1;
             await _service.UpdateAsync(id, dto, userId);
-            return Ok(new ApiResponseDto<string>("Product updated successfully"));
+            return Ok(new ApiResponseDto<string>(null, "Product updated successfully"));
         }
 
         [HttpDelete("{id}")]
