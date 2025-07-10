@@ -38,6 +38,8 @@ builder.Services.AddControllers(options =>
 });
 builder.Services.AddDbContext<GoldServerContext>(options =>
     options.UseSqlServer(connectionString));
+builder.Services.Configure<CloudinarySettings>(
+    builder.Configuration.GetSection("CloudinarySettings"));
 
 // JWT setup
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -107,6 +109,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProvinceWardImportService, ProvinceWardImportService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 
 var app = builder.Build();
 
