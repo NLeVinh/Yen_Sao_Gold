@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace gold_server.DTOs.Product
 {
@@ -10,8 +9,8 @@ namespace gold_server.DTOs.Product
     {
         [Required]
         [MaxLength(100)]
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
 
         [Required]
         public decimal Price { get; set; }
@@ -20,5 +19,7 @@ namespace gold_server.DTOs.Product
 
         [Required]
         public int ID_Status { get; set; }
+
+        public List<IFormFile>? Images { get; set; }
     }
 }

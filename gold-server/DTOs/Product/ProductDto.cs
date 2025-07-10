@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using gold_server.DTOs.Image;
 
 namespace gold_server.DTOs.Product
 {
@@ -12,5 +14,7 @@ namespace gold_server.DTOs.Product
         public int InStock { get; set; }
         public int SoldQuantity { get; set; }
         public int ID_Status { get; set; }
+
+        public List<ImageDto> Images { get; set; } = new();
     }
 }
