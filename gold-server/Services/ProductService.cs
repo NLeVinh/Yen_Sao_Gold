@@ -238,25 +238,20 @@ namespace gold_server.Services
         {
             try
             {
-                // 1️⃣ Xử lý giữ lại các link ảnh cũ nếu ImagesToKeep có
                 if (dto.ImagesToKeep != null && dto.ImagesToKeep.Any())
                 {
                     await RemoveUnwantedImageLinksAsync(productId, dto.ImagesToKeep);
                 }
                 else
                 {
-                    // Nếu không truyền ImagesToKeep ➜ xóa tất cả link cũ
                     await RemoveAllImageLinksAsync(productId);
                 }
 
-                // 2️⃣ Thêm ảnh mới nếu có
                 if (dto.NewImages != null && dto.NewImages.Any())
                 {
                     await AddNewProductImagesAsync(productId, dto.NewImages);
                 }
 
-                // 3️⃣ Clean-up trên Cloudinary:
-                // Xoá ảnh vật lý dư thừa không còn link PRODUCT_IMAGE
                 var finalLinkedImageIds = await GetAllLinkedImageIdsForProduct(productId);
 
                 await _imageService.CleanUpCloudinaryFolderAsync(
