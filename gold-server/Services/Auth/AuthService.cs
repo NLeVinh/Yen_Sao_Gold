@@ -94,7 +94,7 @@ namespace gold_server.Services
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
+                var key = Encoding.UTF8.GetBytes(_jwtSettings.RefreshSecret);
 
                 var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
                 {
@@ -107,6 +107,10 @@ namespace gold_server.Services
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 }, out SecurityToken validatedToken);
+
+                var tokenType = principal.FindFirst(AuthConstants.TokenTypeClaim)?.Value;
+                if (tokenType != AuthConstants.RefreshTokenType)
+                    return null;
 
                 var jwtToken = (JwtSecurityToken)validatedToken;
                 var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -150,55 +154,71 @@ namespace gold_server.Services
 
         private LoginResponseDto GenerateJwtToken(USER user, string roleName, List<string> permissions)
         {
+            var now = DateTime.UtcNow;
+            var accessExp = now.AddMinutes(AuthConstants.AccessTokenMinutes);
+            var refreshExp = now.AddDays(AuthConstants.RefreshTokenDays);
+
+            var accessClaims = BuildAccessClaims(user, roleName, permissions);
+            var refreshClaims = BuildRefreshClaims(user);
+
+            var accessToken = CreateJwt(accessClaims, accessExp, _jwtSettings.Secret, _jwtSettings.Issuer, _jwtSettings.Audience);
+            var refreshToken = CreateJwt(refreshClaims, refreshExp, _jwtSettings.RefreshSecret, _jwtSettings.Issuer, _jwtSettings.Audience);
+
+            return new LoginResponseDto
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresAt = accessExp, // UTC time
+                Role = roleName,
+                Permissions = permissions
+            };
+        }
+
+        private static IEnumerable<Claim> BuildAccessClaims(USER user, string roleName, IEnumerable<string> permissions)
+        {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.ID_User.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(AuthConstants.RoleClaim, roleName)
+                new Claim(AuthConstants.RoleClaim, roleName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
 
-            foreach (var perm in permissions)
-                claims.Add(new Claim(AuthConstants.PermissionClaim, perm));
+            foreach (var p in permissions)
+            {
+                claims.Add(new Claim(AuthConstants.PermissionClaim, p));
+            }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var accessTokenExpires = TimeZoneInfo.ConvertTimeFromUtc(
-                DateTime.UtcNow.AddMinutes(AuthConstants.AccessTokenMinutes),
-                TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
-            );
-            var accessToken = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: accessTokenExpires,
-                signingCredentials: creds
-            );
+            return claims;
+        }
 
-            var refreshClaims = new List<Claim>
+        private static IEnumerable<Claim> BuildRefreshClaims(USER user)
+        {
+            return new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.ID_User.ToString()),
-                new Claim(AuthConstants.TokenTypeClaim, AuthConstants.RefreshTokenType)
+                new Claim(AuthConstants.TokenTypeClaim, AuthConstants.RefreshTokenType),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
-            var refreshTokenExpires = TimeZoneInfo.ConvertTimeFromUtc(
-                DateTime.UtcNow.AddDays(AuthConstants.RefreshTokenDays),
-                TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
-            );
-            var refreshToken = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: refreshClaims,
-                expires: refreshTokenExpires,
+        }
+
+        private static string CreateJwt(IEnumerable<Claim> claims, DateTime expiresUtc, string secret, string issuer, string audience)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                notBefore: DateTime.UtcNow,
+                expires: expiresUtc,
                 signingCredentials: creds
             );
 
-            return new LoginResponseDto
-            {
-                AccessToken = new JwtSecurityTokenHandler().WriteToken(accessToken),
-                RefreshToken = new JwtSecurityTokenHandler().WriteToken(refreshToken),
-                ExpiresAt = accessTokenExpires,
-                Role = roleName,
-                Permissions = permissions
-            };
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         public async Task<bool> AssignPermissionsToRoleAsync(AssignPermissionRequestDto request)

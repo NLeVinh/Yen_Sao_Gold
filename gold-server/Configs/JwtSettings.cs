@@ -8,8 +8,9 @@ namespace gold_server.Configs
     public class JwtSettings
     {
         public string Secret { get; set; } = string.Empty;
+        public string RefreshSecret { get; set; } = string.Empty;
         public string Issuer { get; set; } = string.Empty;
         public string Audience { get; set; } = string.Empty;
-        public int AccessTokenLifetime { get; set; } = 5; // phút, tuỳ ý
+        public int AccessTokenLifetime { get; set; } = 5;
     }
 }
