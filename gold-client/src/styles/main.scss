@@ -2,4 +2,8 @@
 @use './abstracts/mixins';
 @use './base/reset';
 @use './base/base';
+
+// component sass
 @use './components/header';
+@use './components/form-input';
+@use './components/login-form';
