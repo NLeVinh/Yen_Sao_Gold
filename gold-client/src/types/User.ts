@@ -5,3 +5,8 @@ export interface User {
     avatar: string;
     createdAt: string;
 }
+
+export interface LoginPayload {
+    email: string;
+    password: string;
+}

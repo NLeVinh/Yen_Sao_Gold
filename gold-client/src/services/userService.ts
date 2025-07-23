@@ -1,6 +1,8 @@
 import { apiClient } from '@/http/apiClient';
 import { User } from '@/types/User';
 import { ENDPOINT } from '@/constants/apiConstant';
+import { LoginPayload } from '@/types/User';
+import { LoginResponse } from '@/types/Response';
 
 const getUsers = () => apiClient.get<User[]>(ENDPOINT.USER);
 
@@ -14,4 +16,7 @@ const updateUser = (id: number, data: Partial<User>) =>
 
 const deleteUser = (id: number) => apiClient.delete<null>(`${ENDPOINT.USER}/${id}`);
 
-export { getUsers, getUserById, createUser, deleteUser, updateUser };
+const login = (data: LoginPayload) =>
+    apiClient.post<LoginResponse, LoginPayload>(`${ENDPOINT.AUTH}/login`, data);
+
+export { getUsers, getUserById, createUser, deleteUser, updateUser, login };

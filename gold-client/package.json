@@ -12,16 +12,20 @@
         "@emotion/cache": "^11.14.0",
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.0",
+        "@hookform/resolvers": "^5.1.1",
         "@mui/icons-material": "^7.1.1",
         "@mui/material": "^7.1.1",
         "@mui/material-nextjs": "^7.1.1",
         "@reduxjs/toolkit": "^2.8.2",
         "axios": "^1.9.0",
+        "jose": "^6.0.12",
         "next": "15.3.3",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+        "react-hook-form": "^7.60.0",
         "react-redux": "^9.2.0",
-        "sass": "^1.89.2"
+        "sass": "^1.89.2",
+        "zod": "^4.0.5"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3",
