@@ -34,7 +34,6 @@ async function verifyToken(token: string) {
     }
 }
 
-// ✅ OPTION 1: Named export (current approach - keep this)
 export async function middleware(request: NextRequest) {
     try {
         const { pathname } = request.nextUrl;
